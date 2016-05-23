@@ -8,10 +8,10 @@ STATS_denomination = "C"       'C is for each CASE
 
 'LOADING FUNCTIONS LIBRARY FROM GITHUB REPOSITORY===========================================================================
 IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded once
-	IF run_locally = FALSE or run_locally = "" THEN		'If the scripts are set to run locally, it skips this and uses an FSO below.
-		IF use_master_branch = TRUE THEN			'If the default_directory is C:\DHS-MAXIS-Scripts\Script Files, you're probably a scriptwriter and should use the master branch.
+	IF run_locally = FALSE or run_locally = "" THEN	   'If the scripts are set to run locally, it skips this and uses an FSO below.
+		IF use_master_branch = TRUE THEN			   'If the default_directory is C:\DHS-MAXIS-Scripts\Script Files, you're probably a scriptwriter and should use the master branch.
 			FuncLib_URL = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/master/MASTER%20FUNCTIONS%20LIBRARY.vbs"
-		Else																		'Everyone else should use the release branch.
+		Else											'Everyone else should use the release branch.
 			FuncLib_URL = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/RELEASE/MASTER%20FUNCTIONS%20LIBRARY.vbs"
 		End if
 		SET req = CreateObject("Msxml2.XMLHttp.6.0")				'Creates an object to get a FuncLib_URL
@@ -20,22 +20,12 @@ IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded
 		IF req.Status = 200 THEN									'200 means great success
 			Set fso = CreateObject("Scripting.FileSystemObject")	'Creates an FSO
 			Execute req.responseText								'Executes the script code
-		ELSE														'Error message, tells user to try to reach github.com, otherwise instructs to contact Veronica with details (and stops script).
-			MsgBox 	"Something has gone wrong. The code stored on GitHub was not able to be reached." & vbCr &_
-					vbCr & _
-					"Before contacting Veronica Cary, please check to make sure you can load the main page at www.GitHub.com." & vbCr &_
-					vbCr & _
-					"If you can reach GitHub.com, but this script still does not work, ask an alpha user to contact Veronica Cary and provide the following information:" & vbCr &_
-					vbTab & "- The name of the script you are running." & vbCr &_
-					vbTab & "- Whether or not the script is ""erroring out"" for any other users." & vbCr &_
-					vbTab & "- The name and email for an employee from your IT department," & vbCr & _
-					vbTab & vbTab & "responsible for network issues." & vbCr &_
-					vbTab & "- The URL indicated below (a screenshot should suffice)." & vbCr &_
-					vbCr & _
-					"Veronica will work with your IT department to try and solve this issue, if needed." & vbCr &_
-					vbCr &_
-					"URL: " & FuncLib_URL
-					script_end_procedure("Script ended due to error connecting to GitHub.")
+		ELSE														'Error message
+			critical_error_msgbox = MsgBox ("Something has gone wrong. The Functions Library code stored on GitHub was not able to be reached." & vbNewLine & vbNewLine &_
+                                            "FuncLib URL: " & FuncLib_URL & vbNewLine & vbNewLine &_
+                                            "The script has stopped. Please check your Internet connection. Consult a scripts administrator with any questions.", _
+                                            vbOKonly + vbCritical, "BlueZone Scripts Critical Error")
+            StopScript
 		END IF
 	ELSE
 		FuncLib_URL = "C:\BZS-FuncLib\MASTER FUNCTIONS LIBRARY.vbs"
@@ -118,41 +108,41 @@ report_month_dropdown = trim(report_month_dropdown)			'prevents matching errors 
 'This assigns a footer month and year based on the worksheet names selected in the dropdown from the dialog'
 Select Case report_month_dropdown
 Case "January 2016"
-	footer_month = "01"
-	footer_year = "16"
+	MAXIS_footer_month = "01"
+	MAXIS_footer_year = "16"
 Case "February 2016"
-	footer_month = "02"
-	footer_year = "16"
+	MAXIS_footer_month = "02"
+	MAXIS_footer_year = "16"
 Case "March 2016"
-	footer_month = "03"
-	footer_year = "16"
+	MAXIS_footer_month = "03"
+	MAXIS_footer_year = "16"
 Case "April 2016"
-	footer_month = "04"
-	footer_year = "16"
+	MAXIS_footer_month = "04"
+	MAXIS_footer_year = "16"
 Case "May 2016"
-	footer_month = "05"
-	footer_year = "16"
+	MAXIS_footer_month = "05"
+	MAXIS_footer_year = "16"
 Case "June 2016"
-	footer_month = "06"
-	footer_year = "16"
+	MAXIS_footer_month = "06"
+	MAXIS_footer_year = "16"
 Case "July 2016"
-	footer_month = "07"
-	footer_year = "16"
+	MAXIS_footer_month = "07"
+	MAXIS_footer_year = "16"
 Case "August 2016"
-	footer_month = "08"
-	footer_year = "16"
+	MAXIS_footer_month = "08"
+	MAXIS_footer_year = "16"
 Case "September 2016"
-	footer_month = "09"
-	footer_year = "16"
+	MAXIS_footer_month = "09"
+	MAXIS_footer_year = "16"
 Case "October 2016"
-	footer_month = "10"
-	footer_year = "16"
+	MAXIS_footer_month = "10"
+	MAXIS_footer_year = "16"
 Case "November 2016"
-	footer_month = "11"
-	footer_year = "16"
+	MAXIS_footer_month = "11"
+	MAXIS_footer_year = "16"
 Case "December 2016"
-	footer_month = "12"
-	footer_year = "16"
+	MAXIS_footer_month = "12"
+	MAXIS_footer_year = "16"
 End Select
 
 'Sets up the array to store all the information for each client'
@@ -179,16 +169,16 @@ Const clt_filter        = 14
 excel_row = 3 're-establishing the row to start checking the members for
 entry_record = 0
 Do                                                            'Loops until there are no more cases in the Excel list
-	case_number = objExcel.cells(excel_row, 4).Value          're-establishing the case numbers for functions to use
-	If case_number = "" then exit do
-	case_number = trim(case_number)
+	MAXIS_case_number = objExcel.cells(excel_row, 4).Value          're-establishing the case numbers for functions to use
+	If MAXIS_case_number = "" then exit do
+	MAXIS_case_number = trim(MAXIS_case_number)
 	client_first_name = objExcel.cells(excel_row, 3).Value		'Pulls the client's first and last names and trims for future matching
 	client_last_name  = objExcel.cells(excel_row, 2).Value             're-establishing the client name
 	client_first_name = UCase(trim(client_first_name))
 	client_last_name  = UCase(trim(client_last_name))
 	'Adding client information to the array'
 	ReDim Preserve Banked_Month_Client_Array(14, entry_record)	'This resizes the array based on the number of rows in the Excel File'
-	Banked_Month_Client_Array (case_num,       entry_record) = case_number		'The client information is added to the array'
+	Banked_Month_Client_Array (case_num,       entry_record) = MAXIS_case_number		'The client information is added to the array'
 	Banked_Month_Client_Array (clt_last_name,  entry_record) = client_last_name
 	Banked_Month_Client_Array (clt_first_name, entry_record) = client_first_name
 	Banked_Month_Client_Array (clt_name,       entry_record) = client_first_name & " " & client_last_name
@@ -203,7 +193,7 @@ objExcel.Quit
 
 'Now we will get PMI and Member Number for each client on the array.'
 For item = 0 to UBound(Banked_Month_Client_Array, 2)
-	case_number = Banked_Month_Client_Array(case_num,item)				'Case number is set for each loop as it is used in the FuncLib functions'
+	MAXIS_case_number = Banked_Month_Client_Array(case_num,item)				'Case number is set for each loop as it is used in the FuncLib functions'
 	Call navigate_to_MAXIS_screen("INFC", "WORK")						'Finding client information on STAT MEMB'
 	EMReadScreen WORK_check, 4, 2, 51									'Making sure the script made it to INFC/WORK '
 	IF WORK_check = "WORK" Then
@@ -248,13 +238,13 @@ list_done_msgbox = MsgBox ("The script has finished compiling the list of client
   "* Create a report of the clients that were NOT added to the report" & vbNewLine & vbNewLine & "The script will take a few minutes to check ELIG and STAT before asking you for the Excel File of the DHS Report", vbOkOnly + vbInformation, "Client List Created")
 
 For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the array will be checked in ELIG and STAT'
-	case_number = Banked_Month_Client_Array(case_num,item)	'Case number is set for each loop as it is used in the FuncLib functions'
+	MAXIS_case_number = Banked_Month_Client_Array(case_num,item)	'Case number is set for each loop as it is used in the FuncLib functions'
 	If Banked_Month_Client_Array(send_to_DHS, item) = TRUE Then	'If a case has already been removed from the DHS report, no additional check is needed'
 		call navigate_to_MAXIS_screen ("ELIG", "FS")		'Checking ELIG - this is footer month specific (set above)'
 		EMReadScreen no_SNAP, 10, 24, 2
 		If no_SNAP = "NO VERSION" then						'NO SNAP version means no banked months could have been used'
 			Banked_Month_Client_Array(send_to_DHS, item) = FALSE	'Removing this client from DHS report - reason on next line'
-			Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No version of SNAP exists for " & footer_month & "/" & footer_year & " | "
+			Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No version of SNAP exists for " & MAXIS_footer_month & "/" & MAXIS_footer_year & " | "
 		END IF 
 		EMWriteScreen "99", 19, 78 		
 		transmit	
@@ -264,7 +254,7 @@ For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the arr
 			EMReadScreen app_status, 8, status_row, 50
 			If app_status = "        " then 
 				Banked_Month_Client_Array(send_to_DHS, item) = FALSE	'Removing this client from DHS report - reason on next line'
-				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No approved eligibility results exists in " & footer_month & "/" & footer_year & " | "
+				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No approved eligibility results exists in " & MAXIS_footer_month & "/" & MAXIS_footer_year & " | "
 				PF3
 				exit do 	'if end of the list is reached then exits the do loop
 			End if 
@@ -272,7 +262,7 @@ For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the arr
 		Loop until  app_status = "APPROVED" or app_status = "        "
 			If app_status <> "APPROVED" then 
 				Banked_Month_Client_Array(send_to_DHS, item) = FALSE	'Removing this client from DHS report - reason on next line'
-				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No approved eligibility results exists in " & footer_month & "/" & footer_year & " | "
+				Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "No approved eligibility results exists in " & MAXIS_footer_month & "/" & MAXIS_footer_year & " | "
 			Elseif app_status = "APPROVED" then 
 				EMReadScreen vers_number, 1, status_row, 23
 				EMWriteScreen vers_number, 18, 54
@@ -286,12 +276,12 @@ For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the arr
 						If pers_elig = "ELIGIBLE" then exit do 
 						IF pers_elig = "INELIGIB" Then						'If ineligible the footer month, they did not use banked months'
 							Banked_Month_Client_Array(send_to_DHS, item) = FALSE	'Removing this client from DHS report - reason on next line'
-							Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client listed as Ineligible for SNAP on ELIG/FS for " & footer_month & "/" & footer_year & " | "
+							Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client listed as Ineligible for SNAP on ELIG/FS for " & MAXIS_footer_month & "/" & MAXIS_footer_year & " | "
 							exit do
 						End If
 					ElseIf clt_on_snap = "  " Then							'If client is not found, they did not receive SNAP on this case in this month'
 						Banked_Month_Client_Array(send_to_DHS, item) = FALSE	'Removing this client from DHS report - reason on next line'
-						Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client not listed on ELIG/FS for " &  footer_month & "/" & footer_year & " | "
+						Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "Client not listed on ELIG/FS for " &  MAXIS_footer_month & "/" & MAXIS_footer_year & " | "
 					Else
 						elig_maxis_row = elig_maxis_row + 1
 						If elig_maxis_row = 19 Then
@@ -305,7 +295,7 @@ For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the arr
 				EMReadScreen fs_prorated, 8, 11,40			'Looking to see if benefits were prorated, if so, no banked months were used'
 				IF fs_prorated = "Prorated" Then
 					Banked_Month_Client_Array(send_to_DHS, item) = FALSE	'Removing this client from DHS report - reason on next line'
-					Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "SNAP is prorated in " & footer_month & "/" & footer_year & " | "
+					Banked_Month_Client_Array(reason_excluded, item) = Banked_Month_Client_Array(reason_excluded,item) & "SNAP is prorated in " & MAXIS_footer_month & "/" & MAXIS_footer_year & " | "
 				End If
 			END If
 		'///////SCRIPT WILL NOW CHECK FOR POSSIBLE EXPEMTIONS FOR CLIENT'
@@ -539,7 +529,7 @@ For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the arr
 
 		'//////////WREG PORTION//////////////////////////////////////////////
 		'This is intense, the script is going to check every line on the WREG tracker to list all of the counted ABAWD months for the report'
-		report_date = footer_month & "/" & footer_year			'creating date variables to measure against person note counted dates
+		report_date = MAXIS_footer_month & "/" & MAXIS_footer_year			'creating date variables to measure against person note counted dates
 
 		Call navigate_to_MAXIS_screen("stat","wreg")		'navigates to stat/wreg
 		EMWriteScreen Banked_Month_Client_Array(memb_num, item), 20, 76
@@ -554,7 +544,7 @@ For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the arr
 		IF wreg_total <> "0" THEN
 			EmWriteScreen "x", 13, 57		'Pulls up the WREG tracker'
 			transmit
-			bene_mo_col = (15 + (4*cint(footer_month)))		'col to search starts at 15, increased by 4 for each footer month
+			bene_mo_col = (15 + (4*cint(MAXIS_footer_month)))		'col to search starts at 15, increased by 4 for each footer month
 			bene_yr_row = 10
 				abawd_counted_months = 0					'delclares the variables values at 0
 				second_abawd_period = 0
@@ -580,7 +570,7 @@ For item = 0 to UBound(Banked_Month_Client_Array, 2)		'Now each entry in the arr
 						EMReadScreen counted_date_year, 2, bene_yr_row, 14			'reading counted year date
 						abawd_counted_months_string = counted_date_month & "/" & counted_date_year
 						If abawd_counted_months_string <> report_date then
-							If counted_date_year < footer_year then 			'does not add dates that are report month or later to the array
+							If counted_date_year < MAXIS_footer_year then 			'does not add dates that are report month or later to the array
 								abawd_info_list = abawd_info_list & ", " & abawd_counted_months_string			'adding variable to list to add to array
 								abawd_counted_months = abawd_counted_months + 1				'adding counted months
 							Elseif abawd_counted_months_string < report_date then
@@ -723,7 +713,7 @@ Next
 
 'The user already selected the month in the initial excel sheet - this was used to set the footer month.'
 'Now the footer month is used to select the right worksheet in the DHS report to match'
-Select Case footer_month
+Select Case MAXIS_footer_month
 Case "01"
 	DHS_report_month = DHS_report_month_array(0)	'January, arrays start at 0'
 Case "02"

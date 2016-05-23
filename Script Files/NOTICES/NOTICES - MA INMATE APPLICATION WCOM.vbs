@@ -1,7 +1,6 @@
-'GATHERING STATS----------------------------------------------------------------------------------------------------
+'Required for statistical purposes==========================================================================================
 name_of_script = "NOTICES - MA INMATE APPLICATION WCOM.vbs"
 start_time = timer
-'Required for statistical purposes==========================================================================================
 STATS_counter = 1                          'sets the stats counter at one
 STATS_manualtime = 90                               'manual run time in seconds
 STATS_denomination = "C"       'C is for each CASE
@@ -9,10 +8,10 @@ STATS_denomination = "C"       'C is for each CASE
 
 'LOADING FUNCTIONS LIBRARY FROM GITHUB REPOSITORY===========================================================================
 IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded once
-	IF run_locally = FALSE or run_locally = "" THEN		'If the scripts are set to run locally, it skips this and uses an FSO below.
-		IF use_master_branch = TRUE THEN			'If the default_directory is C:\DHS-MAXIS-Scripts\Script Files, you're probably a scriptwriter and should use the master branch.
+	IF run_locally = FALSE or run_locally = "" THEN	   'If the scripts are set to run locally, it skips this and uses an FSO below.
+		IF use_master_branch = TRUE THEN			   'If the default_directory is C:\DHS-MAXIS-Scripts\Script Files, you're probably a scriptwriter and should use the master branch.
 			FuncLib_URL = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/master/MASTER%20FUNCTIONS%20LIBRARY.vbs"
-		Else																		'Everyone else should use the release branch.
+		Else											'Everyone else should use the release branch.
 			FuncLib_URL = "https://raw.githubusercontent.com/MN-Script-Team/BZS-FuncLib/RELEASE/MASTER%20FUNCTIONS%20LIBRARY.vbs"
 		End if
 		SET req = CreateObject("Msxml2.XMLHttp.6.0")				'Creates an object to get a FuncLib_URL
@@ -21,22 +20,12 @@ IF IsEmpty(FuncLib_URL) = TRUE THEN	'Shouldn't load FuncLib if it already loaded
 		IF req.Status = 200 THEN									'200 means great success
 			Set fso = CreateObject("Scripting.FileSystemObject")	'Creates an FSO
 			Execute req.responseText								'Executes the script code
-		ELSE														'Error message, tells user to try to reach github.com, otherwise instructs to contact Veronica with details (and stops script).
-			MsgBox 	"Something has gone wrong. The code stored on GitHub was not able to be reached." & vbCr &_
-					vbCr & _
-					"Before contacting Veronica Cary, please check to make sure you can load the main page at www.GitHub.com." & vbCr &_
-					vbCr & _
-					"If you can reach GitHub.com, but this script still does not work, ask an alpha user to contact Veronica Cary and provide the following information:" & vbCr &_
-					vbTab & "- The name of the script you are running." & vbCr &_
-					vbTab & "- Whether or not the script is ""erroring out"" for any other users." & vbCr &_
-					vbTab & "- The name and email for an employee from your IT department," & vbCr & _
-					vbTab & vbTab & "responsible for network issues." & vbCr &_
-					vbTab & "- The URL indicated below (a screenshot should suffice)." & vbCr &_
-					vbCr & _
-					"Veronica will work with your IT department to try and solve this issue, if needed." & vbCr &_
-					vbCr &_
-					"URL: " & FuncLib_URL
-					script_end_procedure("Script ended due to error connecting to GitHub.")
+		ELSE														'Error message
+			critical_error_msgbox = MsgBox ("Something has gone wrong. The Functions Library code stored on GitHub was not able to be reached." & vbNewLine & vbNewLine &_
+                                            "FuncLib URL: " & FuncLib_URL & vbNewLine & vbNewLine &_
+                                            "The script has stopped. Please check your Internet connection. Consult a scripts administrator with any questions.", _
+                                            vbOKonly + vbCritical, "BlueZone Scripts Critical Error")
+            StopScript
 		END IF
 	ELSE
 		FuncLib_URL = "C:\BZS-FuncLib\MASTER FUNCTIONS LIBRARY.vbs"
@@ -50,10 +39,9 @@ END IF
 'END FUNCTIONS LIBRARY BLOCK================================================================================================
 
 
-
 '--- DIALOGS-----------------------------------------------------------------------------------------------------------------------
 BeginDialog case_number_dlg, 0, 0, 196, 85, "MA Inmate Application WCOM"
-  EditBox 70, 15, 60, 15, case_number
+  EditBox 70, 15, 60, 15, MAXIS_case_number
   EditBox 70, 35, 30, 15, approval_month
   EditBox 160, 35, 30, 15, approval_year
   ButtonGroup ButtonPressed
@@ -67,7 +55,7 @@ EndDialog
 BeginDialog WCOM_dlg, 0, 0, 146, 120, "MA Inmate Application WCOM"
   EditBox 75, 15, 60, 15, HH_member
   EditBox 75, 35, 60, 15, facility_name
-  EditBox 75, 55, 60, 15, date_out
+  EditBox 75, 55, 60, 15, most_recent_release_date
   EditBox 75, 75, 60, 15, worker_signature
   ButtonGroup ButtonPressed
     OkButton 15, 95, 50, 15
@@ -85,14 +73,14 @@ EndDialog
 
 EMConnect ""
 
-call MAXIS_case_number_finder(case_number)
+call MAXIS_case_number_finder(MAXIS_case_number)
 
 '1st Dialog ---------------------------------------------------------------------------------------------------------------------
 DO
 	err_msg = ""
 	dialog case_number_dlg
 	cancel_confirmation
-	IF case_number = "" THEN err_msg = "Please enter a case number" & vbNewLine
+	IF MAXIS_case_number = "" THEN err_msg = "Please enter a case number" & vbNewLine
 	IF len(approval_month) <> 2 THEN err_msg = err_msg & "Please enter your month in MM format." & vbNewLine
 	IF len(approval_year) <> 2 THEN err_msg = err_msg & "Please enter your year in YY format." & vbNewLine
 	IF err_msg <> "" THEN msgbox err_msg
@@ -113,21 +101,6 @@ call check_for_maxis(false)
 
 'Gathering/formatting variables---------------------------------------------------------------------------------------------------------------------
 back_to_self
-CALL navigate_to_MAXIS_screen("STAT","HCRE")
-'determining what row the member is on HCRE
-hcre_row = 10
-Do
-	EMReadScreen Ref_number_hcre, 2, hcre_row, 24
-	If Ref_number_hcre <> HH_member Then hcre_row = hcre_row + 1
-	If hcre_row = 17 Then
-		PF20 'shift pf7
-		EMReadScreen hcre_message_check, 4, 24, 14    'checking to see if we hit the last page of HCRE
-		IF hcre_message_check = "LAST" THEN script_end_procedure("Requested member was not found on HCRE. Please review case.") 'if the requested member isn't on HCRE end script
-		hcre_row = 10
-	END IF
-Loop until Ref_number_hcre = HH_member
-'Reading HCRE info for that member
-EMReadScreen HCRE_coverage_date, 5, hcre_row, 64
 'navigating to FACI to find which facility
 CALL navigate_to_MAXIS_screen("STAT","FACI")
 EMWriteScreen HH_member, 20, 76
@@ -136,40 +109,40 @@ transmit
 EMReadScreen FACI_total, 1, 2, 78
 IF FACI_total = 0 THEN script_end_procedure("Correctional facility panel with an end date was not found for requested member. Please review case.")   'quitting if no FACI panels found.
 If FACI_total <> 0 then 
-    row = 14
+DO
+	row = 14
+	EMReadScreen FACI_current, 1, 2, 73
     Do
-		EMReadScreen faci_type, 2, 7, 43     'reading for facility type 68 (county correctional facility)
-		IF faci_type = "68" THEN 
+		EMReadScreen faci_type, 2, 7, 43     'reading for facility type 68 (county correctional facility) 69 (non county correctional facility)
+		IF faci_type = "68" or faci_type = "69" THEN 
 			EMReadscreen date_out, 10, row, 71    
-			date_out = replace(date_out, " ", "/")
-			If (left(date_out, 2) = left(HCRE_coverage_date, 2) AND right(date_out, 2) = right(HCRE_coverage_date, 2)) THEN     'the HCRE month matches the release month for this correctional facility
-				EMReadScreen facility_name, 30, 6, 43
-				facility_name = replace(facility_name, "_", "")
-				Exit do
+			If date_out = "__ __ ____" AND row = 14 THEN Exit Do										'stopping as if the first row read doesn't have an end date then it cannot be compared.
+			If date_out <> "__ __ ____" or date_out = "          " THEN 							'finding the most recent date out. Per MAXIS this will always be the one on the bottom
+				row = row + 1																		'if it finds anything other than a blank field it goes to the next row.
 			ELSE
-				row = row + 1
-			END IF
-				
-			If row > 18 then
-				EMReadScreen FACI_page, 1, 2, 73
-				If FACI_page = FACI_total then       'if nothing is found stop script
-					script_end_procedure("Correctional facility panel with an end date was not found for requested member. Please review case.")
-				Else
-					transmit
-					row = 14
-				End if
-			End if
+				EMReadscreen date_out, 10, row - 1, 71											'once it finds a blank row it looks are the row above it (the most recent out date for that panel)
+				date_out = replace(date_out, " ", "/")
+				IF date_to_compare = "" THEN 													'it now sets a date to compare by if it's the first time through the loop that bar is set here. 
+					date_to_compare = date_out
+					previous_date_diff = datediff("d", date_to_compare, date_out)
+				END IF
+				IF previous_date_diff =< datediff("d", date_to_compare, date_out) Then			'here it actually compares the overall most recent date with the most recent date found on current panel
+					previous_date_diff = datediff("d", date_to_compare, date_out)				'resetting the most recent date to compare with if a most recent date is found
+					EMReadScreen facility_name, 30, 6, 43										'defining the facility if the current most recent date is found
+					most_recent_release_date = cstr(date_out)									'converting as dialogs won't display dates sometimes
+					facility_name = replace(facility_name, "_", "")								'cleaning up the facility name
+				END IF
+				exit do
+			END If
 		ELSE
-			EMReadScreen FACI_page, 1, 2, 73
-			If FACI_page = FACI_total then        'if nothing is found stop script
-				script_end_procedure("Correctional facility panel with an end date was not found for requested member. Please review case.")
-			Else
-				transmit
-			END IF
-		END IF
-	Loop
-End if
+			Exit Do
+		END IF		
+	Loop until row = 19											'looping until there are no more date outs to be read on that panel. 		
+	Transmit
+Loop until FACI_current = FACI_total														'looping until you've checked all of the panels available.
+END IF	
 
+IF facility_name = "" THEN script_end_procedure("The script was unable to find a FACI panel with 68 or 69 and an end date. Please review FACI panel.")
 
 '2nd Dialog---------------------------------------------------------------------------------------------------------------------------------------------
 DO
@@ -178,12 +151,10 @@ DO
 	cancel_confirmation
 	IF HH_member = "" THEN err_msg = err_msg & "Please enter your member number." & vbNewLine
 	IF facility_name = "" THEN err_msg = err_msg & "Please enter your facility name." & vbNewLine
-	IF isdate(date_out) = FALSE THEN err_msg = err_msg & "Please enter a valid date." & vbNewLine
+	IF isdate(most_recent_release_date) = FALSE THEN err_msg = err_msg & "Please enter a valid date." & vbNewLine
 	IF worker_signature = "" THEN err_msg = err_msg & "Please enter your worker signature" & vbNewLine
 	IF err_msg <> "" THEN msgbox err_msg
 LOOP until err_msg = ""
-
-call check_for_maxis(false)
 
 'WCOM PIECE---------------------------------------------------------------------------------------------------------------------
 call navigate_to_MAXIS_screen("spec", "wcom")
@@ -215,7 +186,7 @@ DO
 		Transmit
 		pf9
 	    EMSetCursor 03, 15
-		CALL write_variable_in_SPEC_MEMO("MA begins " & date_out & ", the date you are released from the correctional facility.")
+		CALL write_variable_in_SPEC_MEMO("MA begins " & most_recent_release_date & ", the date you are released from the correctional facility.")
 	    PF4
 		PF3
 		WCOM_count = WCOM_count + 1
@@ -237,7 +208,7 @@ ELSE 					'If a waiting FS notice is found
 	'Case note
 	start_a_blank_case_note
 	call write_variable_in_CASE_NOTE("---WCOM Regarding Inmate Application Added---")
-	call write_bullet_and_variable_in_CASE_NOTE("MA Start Date/Release Date", date_out)
+	call write_bullet_and_variable_in_CASE_NOTE("MA Start Date/Release Date", most_recent_release_date)
 	call write_bullet_and_variable_in_CASE_note("Facility", facility_name)
 	call write_variable_in_CASE_note("* WCOM added to notice for member " & reference_number)
 	call write_variable_in_CASE_NOTE("---")
